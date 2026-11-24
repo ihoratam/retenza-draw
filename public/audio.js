@@ -3,7 +3,7 @@ const Music = (() => {
   const FILE = 'music.mp3';
   const START_AT = 33;   // seconds: where the track starts when the game begins
   const VOLUME = 0.35;
-  let muted = false, want = false, fresh = true, available = true, ctx = null;
+  let loaded = false, muted = false, want = false, fresh = true, available = true, ctx = null;
   try { muted = localStorage.getItem('muted') === '1'; } catch (e) {}
 
   const audio = new Audio();
@@ -37,7 +37,7 @@ const Music = (() => {
 
   function start() { // call from a click (Join) to unlock audio
     try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch (e) {}
-    audio.load();
+    if (!loaded) { audio.load(); loaded = true; } // load once; reloading would stop playback
   }
   function setPlaying(b) { if (!b) fresh = true; want = b; apply(); }
   function setMuted(m) {

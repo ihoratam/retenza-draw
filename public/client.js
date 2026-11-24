@@ -194,7 +194,7 @@ function setTime() {
 }
 const mb = $('muteBtn');
 mb.textContent = Music.muted ? '🔇' : '🔊';
-mb.onclick = () => { Music.setMuted(!Music.muted); mb.textContent = Music.muted ? '🔇' : '🔊'; Music.start(); };
+mb.onclick = () => { Music.start(); Music.setMuted(!Music.muted); mb.textContent = Music.muted ? '🔇' : '🔊'; };
 
 $('musicBtn').onclick = () => Music.userPlay();
 
