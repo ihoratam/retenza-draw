@@ -210,3 +210,9 @@ canvas { max-width: 100%; max-height: 100%; background: #fff; border-radius: 10p
 #players .cnt span { display: none; }
 
 #leaveBtn { padding: 6px 12px; font-size: 12px; }
+
+/* picture counter in the top bar */
+#picInfo { display: flex; align-items: baseline; gap: 8px; padding: 4px 16px; border-radius: 99px; background: var(--accent-dim); border: 1px solid rgba(99,102,241,.25); }
+#picInfo .pl { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-light); }
+#picInfo b { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+#picInfo .of { font-size: 13px; font-weight: 600; color: var(--text-secondary); }

@@ -89,7 +89,12 @@ function renderHint() {
 }
 
 function render() {
-  $('roomInfo').textContent = `${state.code} · Picture ${state.round || '-'}/${state.rounds}`;
+  $('roomInfo').textContent = `Room ${state.code}`;
+  const inGame = state.phase !== 'lobby';
+  $('picInfo').hidden = false;
+  $('picInfo').innerHTML = inGame
+    ? `<span class="pl">Picture</span><b>${state.round}</b><span class="of">of ${state.rounds}</span>`
+    : `<span class="pl">Game length</span><b>${state.rounds}</b><span class="of">pictures</span>`;
   if (state.phase !== lastPhase) { lastPhase = state.phase; Music.setPlaying(state.phase === 'drawing'); maxTime = Math.max(state.timeLeft, 1); }
   setTime();
   renderHint();
