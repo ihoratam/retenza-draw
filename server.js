@@ -5,7 +5,8 @@ const WORDS = require('./words');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e6 });
+// Faster dead-connection detection so closed tabs disappear from the list within ~15s
+const io = new Server(server, { maxHttpBufferSize: 1e6, pingInterval: 7000, pingTimeout: 8000 });
 app.use(express.static('public'));
 
 // Game length = number of pictures (turns). The first drawer is the admin who starts; whoever guesses a picture draws the next one.
@@ -119,7 +120,8 @@ io.on('connection', socket => {
   let room = null;
   socket.emit('boot', BOOT);
 
-  socket.on('join', ({ name, code, admin }) => {
+  socket.on('join', ({ name, code, admin, pid }) => {
+    pid = String(pid || '').slice(0, 40);
     name = String(name || '').trim().slice(0, 20);
     code = String(code || '').trim().toUpperCase().slice(0, 12);
     if (!name || !code) return;
@@ -128,19 +130,35 @@ io.on('connection', socket => {
       r = { code, players: new Map(), phase: 'lobby', lang: 'ru', round: 0, history: [], timer: null };
       rooms.set(code, r);
     }
+    // Same browser coming back (reload / reconnect): take over the old session instead of creating a new player
+    let old = null;
+    if (pid) for (const p of r.players.values()) if (p.pid === pid) old = p;
+    if (old) {
+      r.players.delete(old.id);
+      if (r.drawerId === old.id) r.drawerId = socket.id;
+      if (r.nextDrawer === old.id) r.nextDrawer = socket.id;
+      const oldSock = io.sockets.sockets.get(old.id);
+      if (oldSock) { oldSock.emit('replaced'); oldSock.disconnect(true); }
+      name = old.name;
+    }
     const taken = new Set([...r.players.values()].map(p => p.name.toLowerCase()));
     if (taken.has(name.toLowerCase())) {
       let n = 2;
       while (taken.has(`${name} (${n})`.toLowerCase())) n++;
       name = `${name} (${n})`;
     }
-    r.players.set(socket.id, { id: socket.id, name, score: 0, guesses: 0, guessed: false, isAdmin: !!ADMIN_CODE && String(admin || '') === ADMIN_CODE });
+    r.players.set(socket.id, {
+      id: socket.id, pid, name,
+      score: old ? old.score : 0, guesses: old ? old.guesses : 0, guessed: old ? old.guessed : false,
+      isAdmin: (!!ADMIN_CODE && String(admin || '') === ADMIN_CODE) || !!(old && old.isAdmin)
+    });
     room = r;
     socket.join(code);
     socket.emit('joined', { id: socket.id });
     socket.emit('history', r.history);
     if (r.phase === 'drawing' && r.drawerId === socket.id) socket.emit('word', r.word);
-    sys(r, `${name} joined the room`, 'join');
+    if (r.phase === 'choosing' && r.drawerId === socket.id) socket.emit('choices', r.choices);
+    if (!old) sys(r, `${name} joined the room`, 'join');
     emitState(r);
   });
 

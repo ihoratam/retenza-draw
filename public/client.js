@@ -3,6 +3,9 @@ const $ = id => document.getElementById(id);
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
 const COLORS = ['#000000', '#7f7f7f', '#ffffff', '#e53935', '#fb8c00', '#fdd835', '#43a047', '#1e88e5', '#8e24aa', '#6d4c41', '#ec407a'];
 
+// stable id per browser, so a reload is recognised as the same player
+let pid = null;
+try { pid = localStorage.getItem('pid'); if (!pid) { pid = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('pid', pid); } } catch (e) { pid = Math.random().toString(36).slice(2); }
 let lastPhase = null, maxTime = 1, joinedAs = null, me = null, state = null, myWord = null;
 let color = '#000000', size = 5, eraser = false, drawing = false, last = null;
 
@@ -18,10 +21,10 @@ function join() {
   localStorage.setItem('name', name); localStorage.setItem('code', code); localStorage.setItem('admin', admin);
   joinedAs = { name, code, admin };
   Music.start();
-  socket.emit('join', { name, code, admin });
+  socket.emit('join', { name, code, admin, pid });
 }
 // after a connection drop / server restart, re-enter the room automatically
-socket.on('connect', () => { if (joinedAs) { $('messages').innerHTML = ''; socket.emit('join', joinedAs); } });
+socket.on('connect', () => { if (joinedAs) { $('messages').innerHTML = ''; socket.emit('join', { ...joinedAs, pid }); } });
 socket.on('joined', ({ id }) => { me = id; $('login').hidden = true; $('game').hidden = false; });
 
 // ---------- tools ----------
@@ -220,3 +223,7 @@ function sendMsg() {
 }
 $('sendBtn').onclick = sendMsg;
 $('msg').addEventListener('animationend', e => e.target.classList.remove('shake'));
+
+// this tab was replaced by a newer one from the same browser
+socket.on('replaced', () => { joinedAs = null; document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8;font:16px system-ui">The game is open in another tab. Close this one or reload the page to play here.</div>'; });
+window.addEventListener('beforeunload', () => socket.disconnect());
