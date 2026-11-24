@@ -98,7 +98,7 @@ function render() {
     const cls = p.id === state.drawerId ? 'drawer' : p.guessed ? 'guessed' : '';
     const status = p.id === state.drawerId ? 'Drawing' : p.guessed ? 'Guessed it' : '';
     const hue = [...p.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0);
-    return `<div class="p ${cls}"><div class="av" style="--h:${hue}">${esc([...p.name][0] || '?').toUpperCase()}</div><div class="pinfo"><div class="pname">${esc(p.name)}${p.id === me ? ' <span class="you">you</span>' : ''}</div>${status ? `<div class="pstat">${status}</div>` : ''}</div><div class="cnt" title="Pictures guessed"><b>${p.guesses || 0}</b><span>guessed</span></div></div>`;
+    return `<div class="p ${cls}"><div class="av" style="--h:${hue}">${esc([...p.name][0] || '?').toUpperCase()}</div><div class="pinfo"><div class="pname" title="${esc(p.name)}">${esc(p.name)}${p.id === me ? ' <span class="you">you</span>' : ''}</div>${status ? `<div class="pstat">${status}</div>` : ''}</div><div class="cnt" title="Pictures guessed"><b>${p.guesses || 0}</b><span>guessed</span></div></div>`;
   }).join('') + (state.phase === 'lobby' && isAdmin() ? '<button id="startBtn" class="btn-primary">Start game</button>' : '');
   const sb = $('startBtn'); if (sb) sb.onclick = () => socket.emit('start');
   if (state.phase === 'lobby') {
