@@ -2,12 +2,13 @@
 const Music = (() => {
   const FILE = 'music.mp3';
   const START_AT = 33;   // seconds: where the track starts when the game begins
-  const VOLUME = 0.35;
+  let volume = 0.35;
+  try { const v = parseFloat(localStorage.getItem('vol')); if (v >= 0 && v <= 1) volume = v; } catch (e) {}
   let loaded = false, muted = false, want = false, fresh = true, available = true, ctx = null;
   try { muted = localStorage.getItem('muted') === '1'; } catch (e) {}
 
   const audio = new Audio();
-  audio.src = FILE; audio.loop = true; audio.preload = 'auto'; audio.volume = VOLUME;
+  audio.src = FILE; audio.loop = true; audio.preload = 'auto'; audio.volume = volume;
   audio.addEventListener('error', () => { available = false; hint(false); });
   audio.addEventListener('ended', () => { audio.currentTime = START_AT; audio.play().catch(() => {}); });
 
@@ -21,7 +22,7 @@ const Music = (() => {
         if (audio.readyState >= 1) go(); else audio.addEventListener('loadedmetadata', go, { once: true });
         fresh = false;
       }
-      clearInterval(fadeTimer); audio.volume = VOLUME;
+      clearInterval(fadeTimer); audio.volume = volume;
       audio.play().then(() => hint(false)).catch(() => hint(true)); // blocked by browser -> show button
     } else { fadeOut(); hint(false); }
   }
@@ -30,8 +31,8 @@ const Music = (() => {
   function fadeOut() {
     clearInterval(fadeTimer);
     fadeTimer = setInterval(() => {
-      audio.volume = Math.max(0, audio.volume - VOLUME / 8);
-      if (audio.volume <= 0.001) { clearInterval(fadeTimer); audio.pause(); audio.volume = VOLUME; }
+      audio.volume = Math.max(0, audio.volume - volume / 8);
+      if (audio.volume <= 0.001) { clearInterval(fadeTimer); audio.pause(); audio.volume = volume; }
     }, 60);
   }
 
@@ -46,6 +47,11 @@ const Music = (() => {
     apply();
   }
   function userPlay() { apply(); }
+  function setVolume(v) {
+    volume = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem('vol', String(volume)); } catch (e) {}
+    if (!fadeTimer || audio.paused === false) audio.volume = volume;
+  }
   function ding() {
     if (!ctx || muted) return;
     const t = ctx.currentTime;
@@ -56,5 +62,5 @@ const Music = (() => {
       o.connect(g); g.connect(ctx.destination); o.start(t + d); o.stop(t + d + 0.7);
     });
   }
-  return { start, setMuted, setPlaying, userPlay, ding, get muted() { return muted; } };
+  return { start, setMuted, setPlaying, userPlay, setVolume, get volume() { return volume; }, ding, get muted() { return muted; } };
 })();

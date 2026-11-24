@@ -238,3 +238,11 @@ $('leaveBtn').onclick = () => {
   if (state && state.phase !== 'lobby' && !confirm('Leave the game?')) return;
   joinedAs = null; socket.disconnect(); location.reload();
 };
+
+// volume slider
+const vs = $('volSlider');
+vs.value = Math.round(Music.volume * 100);
+vs.oninput = () => {
+  Music.setVolume(vs.value / 100);
+  if (Music.muted && vs.value > 0) { Music.start(); Music.setMuted(false); mb.textContent = '🔊'; }
+};
