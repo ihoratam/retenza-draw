@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: retenza-draw
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_CODE
+        sync: false   # set your secret admin code in the Render dashboard

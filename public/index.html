@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retenza Draw</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="login" class="card fade-up">
+  <div class="stripe"></div>
+  <div class="body">
+    <div class="logoBig"><div class="ring"></div><img src="logo.png" alt="Retenza"></div>
+    <div class="label">Retenza · Team Game</div>
+    <h1 class="gradient-text">Draw &amp; Guess</h1>
+    <input id="name" class="input" placeholder="Your name" maxlength="20">
+    <input id="code" class="input" placeholder="Room code (e.g. TEAM)" maxlength="12">
+    <input id="admin" class="input" type="password" placeholder="Admin code (only for the host)" autocomplete="off">
+    <button id="joinBtn" class="btn-primary">Join</button>
+    <p class="muted">Everyone who enters the same code joins the same game.</p>
+  </div>
+</div>
+
+<div id="game" hidden>
+  <nav>
+    <div class="brand"><img src="logo.png" alt=""><span>Retenza <span class="gradient-text">Draw</span></span></div>
+    <div id="timerWrap"><div id="roomInfo" class="label"></div><button id="musicBtn" class="btn-primary" hidden>🎵 Click to enable music</button><button id="muteBtn" class="btn-ghost" title="Music on/off">🔊</button></div>
+  </nav>
+  <main>
+    <aside id="playersBox" class="card"><div class="label">Players</div><div id="players"></div></aside>
+    <section id="board">
+      <div id="topbar" class="card"><div id="hint"></div><div class="timeRow"><div id="timer"></div><div class="bar"><i id="barFill"></i></div></div></div>
+      <div class="card canvasWrap">
+        <canvas id="canvas" width="800" height="560"></canvas>
+        <div id="overlay" hidden></div>
+      </div>
+      <div id="tools" class="card" hidden>
+        <div id="colors"></div>
+        <input type="range" id="size" min="2" max="30" value="5">
+        <button id="eraser" class="btn-ghost">Eraser</button>
+        <button id="clearBtn" class="btn-ghost">Clear</button>
+      </div>
+    </section>
+    <aside id="chatBox" class="card">
+      <div class="label" style="margin-bottom:10px">Chat</div>
+      <div id="messages"></div>
+      <div id="composer"><div id="composerLabel" class="label">Type your guess here</div><div class="cRow"><input id="msg" class="input" placeholder="Write your answer..." maxlength="100" autocomplete="off"><button id="sendBtn" class="btn-primary">Send</button></div></div>
+    </aside>
+  </main>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="audio.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
