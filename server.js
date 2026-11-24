@@ -5,8 +5,8 @@ const WORDS = require('./words');
 
 const app = express();
 const server = http.createServer(app);
-// Faster dead-connection detection so closed tabs disappear from the list within ~15s
-const io = new Server(server, { maxHttpBufferSize: 1e6, pingInterval: 7000, pingTimeout: 8000 });
+// Faster dead-connection detection so closed tabs disappear from the list within ~9s
+const io = new Server(server, { maxHttpBufferSize: 1e6, pingInterval: 4000, pingTimeout: 5000 });
 app.use(express.static('public'));
 
 // Game length = number of pictures (turns). The first drawer is the admin who starts; whoever guesses a picture draws the next one.

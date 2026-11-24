@@ -227,3 +227,9 @@ $('msg').addEventListener('animationend', e => e.target.classList.remove('shake'
 // this tab was replaced by a newer one from the same browser
 socket.on('replaced', () => { joinedAs = null; document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8;font:16px system-ui">The game is open in another tab. Close this one or reload the page to play here.</div>'; });
 window.addEventListener('beforeunload', () => socket.disconnect());
+window.addEventListener('pagehide', () => socket.disconnect());
+// clean exit: the server drops you from the list immediately
+$('leaveBtn').onclick = () => {
+  if (state && state.phase !== 'lobby' && !confirm('Leave the game?')) return;
+  joinedAs = null; socket.disconnect(); location.reload();
+};

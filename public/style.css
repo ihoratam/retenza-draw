@@ -208,3 +208,5 @@ canvas { max-width: 100%; max-height: 100%; background: #fff; border-radius: 10p
 #players .cnt { min-width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
 #players .cnt b { font-size: 16px; }
 #players .cnt span { display: none; }
+
+#leaveBtn { padding: 6px 12px; font-size: 12px; }
