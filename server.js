@@ -120,8 +120,9 @@ function endTurn(r, guesserId = null) {
 function endGame(r) {
   clearTimers(r);
   r.phase = 'end';
+  r.history = [];
+  io.to(r.code).emit('clear');   // results screen stays until the admin starts a new game
   emitState(r);
-  setTimeout(() => { if (r.phase === 'end') { r.phase = 'lobby'; emitState(r); } }, 15000);
 }
 
 io.on('connection', socket => {
@@ -175,9 +176,14 @@ io.on('connection', socket => {
   });
 
   socket.on('start', () => {
-    if (!room || !room.players.get(socket.id)?.isAdmin || room.phase !== 'lobby') return;
+    if (!room || !room.players.get(socket.id)?.isAdmin || (room.phase !== 'lobby' && room.phase !== 'end')) return;
     if (room.players.size < 2) return socket.emit('chat', { system: true, text: 'At least 2 players are needed' });
     startGame(room, socket.id);
+  });
+
+  socket.on('backToLobby', () => {
+    if (!room || !room.players.get(socket.id)?.isAdmin || room.phase !== 'end') return;
+    room.phase = 'lobby'; room.round = 0; emitState(room);
   });
 
   socket.on('setLang', l => {

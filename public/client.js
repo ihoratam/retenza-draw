@@ -128,6 +128,7 @@ function render() {
 
 function renderOverlay() {
   const o = $('overlay');
+  o.className = state && state.phase === 'end' ? 'final' : '';
   if (!state) return;
   const drawer = state.players.find(p => p.id === state.drawerId);
   if (state.phase === 'lobby') {
@@ -139,12 +140,18 @@ function renderOverlay() {
     o.hidden = false; o.innerHTML = 'Turn over…';
   } else if (state.phase === 'end') {
     const top = rank(state.players);
-    const medals = ['🥇', '🥈', '🥉'];
-    const slot = (p, i) => p ? `<div class="pod pod${i + 1}"><div class="medal">${medals[i]}</div><div class="pn">${esc(p.name)}</div><div class="ps">${p.guesses}</div><div class="pg">pictures guessed</div><div class="bar"></div></div>` : '';
+    const place = p => 1 + state.players.filter(q => q.guesses > p.guesses).length; // ties share a place
+    const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+    const slot = p => p ? `<div class="pod pod${Math.min(place(p), 3)}"><div class="medal">${medals[Math.min(place(p), 3)]}</div><div class="pn">${esc(p.name)}</div><div class="ps">${p.guesses}</div><div class="pg">guessed</div><div class="bar"><span>${place(p)}</span></div></div>` : '';
+    const max = Math.max(1, ...top.map(p => p.guesses));
+    const rows = top.map(p => `<div class="brow${p.id === me ? ' me' : ''}"><span class="bp">${place(p)}</span><span class="bn">${esc(p.name)}</span><span class="bbar"><i style="width:${(p.guesses / max) * 100}%"></i></span><b>${p.guesses}</b></div>`).join('');
+    const actions = isAdmin()
+      ? '<div class="fActions"><button id="againBtn" class="btn-primary">Play again</button><button id="lobbyBtn" class="btn-ghost">Back to lobby</button></div>'
+      : '<div class="fWait">Waiting for the admin to start a new game…</div>';
     o.hidden = false;
-    o.innerHTML = `<div>Game over</div><div class="podium">${slot(top[1], 1)}${slot(top[0], 0)}${slot(top[2], 2)}</div>` +
-      (top[0] && top[0].guesses ? `<div class="sub">Most pictures guessed: <b>${esc(top[0].name)}</b> — ${top[0].guesses}</div>` : '') +
-      top.slice(3).map((p, i) => `<div class="sub">${i + 4}. ${esc(p.name)} — ${p.guesses} guessed</div>`).join('');
+    o.innerHTML = `<div class="fTitle">Game over</div><div class="fSub">Pictures guessed</div><div class="podium">${slot(top[1])}${slot(top[0])}${slot(top[2])}</div><div class="board">${rows}</div>${actions}`;
+    const ab = $('againBtn'); if (ab) ab.onclick = () => socket.emit('start');
+    const lb = $('lobbyBtn'); if (lb) lb.onclick = () => socket.emit('backToLobby');
   } else if (state.phase !== 'choosing') o.hidden = true;
 }
 
