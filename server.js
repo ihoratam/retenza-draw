@@ -6,7 +6,7 @@ const WORDS = require('./words');
 const app = express();
 const server = http.createServer(app);
 // Faster dead-connection detection so closed tabs disappear from the list within ~9s
-const io = new Server(server, { maxHttpBufferSize: 1e6, pingInterval: 4000, pingTimeout: 5000 });
+const io = new Server(server, { maxHttpBufferSize: 1e6, pingInterval: 7000, pingTimeout: 9000 });
 app.use(express.static('public'));
 
 // Game length = number of pictures (turns). The first drawer is the admin who starts; whoever guesses a picture draws the next one.
@@ -135,7 +135,7 @@ io.on('connection', socket => {
     if (!name || !code) return;
     let r = rooms.get(code);
     if (!r) {
-      r = { code, players: new Map(), phase: 'lobby', lang: 'ru', round: 0, history: [], timer: null };
+      r = { code, players: new Map(), phase: 'lobby', lang: 'ru', round: 0, history: [], timer: null, away: new Map() };
       rooms.set(code, r);
     }
     // Same browser coming back (reload / reconnect): take over the old session instead of creating a new player
@@ -149,6 +149,9 @@ io.on('connection', socket => {
       if (oldSock) { oldSock.emit('replaced'); oldSock.disconnect(true); }
       tidyNames(r);
     }
+    // returning after a dropped connection: restore score and guesses for up to 2 minutes
+    let away = null;
+    if (!old && pid && r.away.has(pid)) { away = r.away.get(pid); r.away.delete(pid); if (away.until < Date.now()) away = null; }
     const taken = new Set([...r.players.values()].map(p => p.name.toLowerCase()));
     if (taken.has(name.toLowerCase())) {
       let n = 2;
@@ -157,9 +160,10 @@ io.on('connection', socket => {
     }
     r.players.set(socket.id, {
       id: socket.id, pid, name,
-      score: old ? old.score : 0, guesses: old ? old.guesses : 0, guessed: old ? old.guessed : false,
+      score: old ? old.score : away ? away.score : 0, guesses: old ? old.guesses : away ? away.guesses : 0, guessed: old ? old.guessed : false,
       isAdmin: (!!ADMIN_CODE && String(admin || '') === ADMIN_CODE) || !!(old && old.isAdmin)
     });
+    if (r.stopTimer && r.players.size >= 2) { clearTimeout(r.stopTimer); r.stopTimer = null; }
     room = r;
     socket.join(code);
     socket.emit('joined', { id: socket.id });
@@ -248,10 +252,17 @@ io.on('connection', socket => {
     const p = r.players.get(socket.id);
     r.players.delete(socket.id);
     tidyNames(r);
+    if (p && p.pid && r.phase !== 'lobby') r.away.set(p.pid, { score: p.score, guesses: p.guesses, until: Date.now() + 120000 });
     if (p) sys(r, `${p.name} left`, 'join');
     if (!r.players.size) { clearTimers(r); rooms.delete(r.code); return; }
     if (r.phase !== 'lobby' && r.phase !== 'end') {
-      if (r.players.size < 2) { clearTimers(r); r.phase = 'lobby'; sys(r, 'Only one player left. Game stopped.'); }
+      if (r.players.size < 2) {
+        // give the other player 25s to come back (short connection drops must not kill the game)
+        if (!r.stopTimer) r.stopTimer = setTimeout(() => {
+          r.stopTimer = null;
+          if (r.players.size < 2 && r.phase !== 'lobby' && r.phase !== 'end') { clearTimers(r); r.phase = 'lobby'; sys(r, 'Only one player left. Game stopped.'); emitState(r); }
+        }, 25000);
+      }
       else if (r.drawerId === socket.id && (r.phase === 'drawing' || r.phase === 'choosing')) { sys(r, 'The drawer left'); nextTurn(r); return; }
     }
     emitState(r);

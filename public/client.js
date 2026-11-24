@@ -205,7 +205,17 @@ $('musicBtn').onclick = () => Music.userPlay();
 
 // reload automatically if the server was restarted/updated (avoids stale clients)
 let bootId = null;
-socket.on('boot', id => { if (bootId && bootId !== id) location.reload(); bootId = id; });
+// server was updated/restarted: reload to get the new version, then re-enter the room automatically
+socket.on('boot', id => { if (bootId && bootId !== id) { try { sessionStorage.setItem('rejoin', '1'); } catch (e) {} location.reload(); } bootId = id; });
+try { if (sessionStorage.getItem('rejoin')) { sessionStorage.removeItem('rejoin'); socket.once('connect', () => { if ($('name').value && $('code').value) join(); }); } } catch (e) {}
+// never stay silently disconnected: reconnect when the tab comes back (bfcache / sleep / background)
+function ensureConnected() { if (joinedAs && !socket.connected) socket.connect(); }
+window.addEventListener('pageshow', ensureConnected);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) ensureConnected(); });
+// connection banner
+const banner = document.createElement('div'); banner.id = 'conn'; banner.hidden = true; banner.textContent = 'Connection lost — reconnecting…'; document.body.appendChild(banner);
+socket.on('disconnect', reason => { if (joinedAs && reason !== 'io client disconnect') banner.hidden = false; });
+socket.on('connect', () => { banner.hidden = true; });
 // visible feedback for my own wrong guess
 function flashWrong() {
   const i = $('msg'); i.classList.remove('shake'); void i.offsetWidth; i.classList.add('shake');
