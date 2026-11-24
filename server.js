@@ -34,6 +34,14 @@ function publicState(r) {
 const emitState = r => io.to(r.code).emit('state', publicState(r));
 const sys = (r, text, kind = 'info') => io.to(r.code).emit('chat', { system: true, kind, text });
 
+// Drop the " (2)" suffix once the other player with the same name is gone
+function tidyNames(r) {
+  for (const p of r.players.values()) {
+    const m = p.name.match(/^(.*) \(\d+\)$/);
+    if (m && ![...r.players.values()].some(q => q !== p && q.name.toLowerCase() === m[1].toLowerCase())) p.name = m[1];
+  }
+}
+
 function maskHint(word, revealed) {
   return [...word].map((c, i) => (c === ' ' ? ' ' : revealed.has(i) ? c : '_')).join('');
 }
@@ -139,7 +147,7 @@ io.on('connection', socket => {
       if (r.nextDrawer === old.id) r.nextDrawer = socket.id;
       const oldSock = io.sockets.sockets.get(old.id);
       if (oldSock) { oldSock.emit('replaced'); oldSock.disconnect(true); }
-      name = old.name;
+      tidyNames(r);
     }
     const taken = new Set([...r.players.values()].map(p => p.name.toLowerCase()));
     if (taken.has(name.toLowerCase())) {
@@ -239,6 +247,7 @@ io.on('connection', socket => {
     if (!r) return;
     const p = r.players.get(socket.id);
     r.players.delete(socket.id);
+    tidyNames(r);
     if (p) sys(r, `${p.name} left`, 'join');
     if (!r.players.size) { clearTimers(r); rooms.delete(r.code); return; }
     if (r.phase !== 'lobby' && r.phase !== 'end') {
