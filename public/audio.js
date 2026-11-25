@@ -2,8 +2,8 @@
 const Music = (() => {
   const FILE = 'music.mp3';
   const START_AT = 33;   // seconds: where the track starts when the game begins
-  let volume = 0.35;
-  try { const v = parseFloat(localStorage.getItem('vol')); if (v >= 0 && v <= 1) volume = v; } catch (e) {}
+  let volume = 0.3; // default 30%
+  try { const v = parseFloat(localStorage.getItem('vol2')); if (v >= 0 && v <= 1) volume = v; } catch (e) {}
   let loaded = false, muted = false, want = false, fresh = true, available = true, ctx = null;
   try { muted = localStorage.getItem('muted') === '1'; } catch (e) {}
 
@@ -49,7 +49,7 @@ const Music = (() => {
   function userPlay() { apply(); }
   function setVolume(v) {
     volume = Math.max(0, Math.min(1, v));
-    try { localStorage.setItem('vol', String(volume)); } catch (e) {}
+    try { localStorage.setItem('vol2', String(volume)); } catch (e) {}
     if (!fadeTimer || audio.paused === false) audio.volume = volume;
   }
   function ding() {
