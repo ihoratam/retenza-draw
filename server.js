@@ -131,6 +131,12 @@ io.on('connection', socket => {
 
   socket.on('join', ({ name, code, admin, pid }) => {
     pid = String(pid || '').slice(0, 40);
+    // a repeated join from the same connection must never kick that connection out
+    if (room && room.players.has(socket.id)) {
+      socket.emit('joined', { id: socket.id });
+      socket.emit('history', room.history);
+      return emitState(room);
+    }
     name = String(name || '').trim().slice(0, 20);
     code = String(code || '').trim().toUpperCase().slice(0, 12);
     if (!name || !code) return;
@@ -159,6 +165,7 @@ io.on('connection', socket => {
       while (taken.has(`${name} (${n})`.toLowerCase())) n++;
       name = `${name} (${n})`;
     }
+    console.log(`[join] room=${code} name=${name} pid=${pid.slice(0, 6)} takeover=${!!old} restored=${!!away}`);
     r.players.set(socket.id, {
       id: socket.id, pid, name,
       score: old ? old.score : away ? away.score : 0, guesses: old ? old.guesses : away ? away.guesses : 0, guessed: old ? old.guessed : false,
@@ -252,9 +259,10 @@ io.on('connection', socket => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', reason => {
     const r = room;
     if (!r) return;
+    console.log(`[leave] room=${r.code} name=${r.players.get(socket.id)?.name || '-'} reason=${reason}`);
     const p = r.players.get(socket.id);
     r.players.delete(socket.id);
     tidyNames(r);
